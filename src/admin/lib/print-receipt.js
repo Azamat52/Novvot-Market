@@ -1,3 +1,4 @@
+
 /**
  * Chekni faqat o'zini alohida hujjatda 80 mm termal printerga chiqaradi.
  * Asosiy sahifadagi boshqa elementlar chop etish oqimiga kirmaydi.
@@ -9,7 +10,6 @@ export function printReceipt() {
     return Promise.reject(new Error("Chek oynasi topilmadi"));
   }
 
-  // Chekni alohida iframe ichida chop etamiz.
   const frame = document.createElement("iframe");
   frame.setAttribute("title", "Chekni chop etish");
   frame.setAttribute("aria-hidden", "true");
@@ -18,10 +18,11 @@ export function printReceipt() {
     position: "fixed",
     right: "0",
     bottom: "0",
-    width: "0",
-    height: "0",
+    width: "80mm",
+    height: "1px",
     border: "0",
-    visibility: "hidden",
+    opacity: "0",
+    pointerEvents: "none",
   });
 
   document.body.appendChild(frame);
@@ -49,7 +50,7 @@ export function printReceipt() {
 
   <style>
     @page {
-      size: 80mm auto;
+      size: 80mm 200mm;
       margin: 0;
     }
 
@@ -73,9 +74,9 @@ export function printReceipt() {
     #pos-receipt {
       display: block !important;
       position: static !important;
-      width: 64mm !important;
-      min-width: 64mm !important;
-      max-width: 64mm !important;
+      width: 72mm !important;
+      min-width: 72mm !important;
+      max-width: 72mm !important;
       height: auto !important;
       min-height: 0 !important;
       margin: 0 auto !important;
@@ -104,7 +105,12 @@ export function printReceipt() {
       overflow-wrap: anywhere !important;
     }
 
-    #pos-receipt .receipt-logo { display:block !important; width:22mm !important; height:auto !important; margin:0 auto 1.5mm !important; }
+    #pos-receipt .receipt-logo {
+      display: block !important;
+      width: 18mm !important;
+      height: auto !important;
+      margin: 0 auto 1.5mm !important;
+    }
 
     #pos-receipt p {
       margin: 0 !important;
@@ -244,11 +250,6 @@ export function printReceipt() {
         margin: 0 !important;
         padding: 0 !important;
       }
-
-      #pos-receipt {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
     }
   </style>
 </head>
@@ -265,14 +266,12 @@ export function printReceipt() {
 
     const cleanup = () => {
       frame.contentWindow?.removeEventListener("afterprint", handleAfterPrint);
-
       window.removeEventListener("afterprint", handleAfterPrint);
       frame.remove();
     };
 
     const finish = () => {
       if (settled) return;
-
       settled = true;
       cleanup();
       resolve();
@@ -310,13 +309,15 @@ export function printReceipt() {
           throw new Error("Chek chop etish hujjatida topilmadi");
         }
 
-        // Chek balandligini mazmuniga qarab hisoblash.
         const heightPx = Math.max(
           printedReceipt.scrollHeight,
           printedReceipt.getBoundingClientRect().height,
         );
 
-        const heightMm = Math.max(35, Math.ceil((heightPx * 25.4) / 96) + 3);
+        const heightMm = Math.max(
+          35,
+          Math.ceil((heightPx * 25.4) / 96) + 5
+        );
 
         const pageStyle = frameDocument.createElement("style");
 
@@ -334,9 +335,13 @@ export function printReceipt() {
 
         frameDocument.head.appendChild(pageStyle);
 
-        frameWindow.addEventListener("afterprint", handleAfterPrint, { once: true });
+        frameWindow.addEventListener("afterprint", handleAfterPrint, {
+          once: true,
+        });
 
-        window.addEventListener("afterprint", handleAfterPrint, { once: true });
+        window.addEventListener("afterprint", handleAfterPrint, {
+          once: true,
+        });
 
         frameWindow.focus();
         frameWindow.print();
@@ -349,8 +354,6 @@ export function printReceipt() {
       }
     };
 
-    // Ayrim brauzerlarda document.write dan keyin
-    // load hodisasi kechikishi mumkin.
     if (frame.contentDocument?.readyState === "complete") {
       frame.onload?.(new Event("load"));
     }
